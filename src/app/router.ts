@@ -1,3 +1,4 @@
+import { HTTP_METHOD } from './http_method.ts';
 import { ServerRequestExtended } from './server-request-extended.ts';
 
 interface MatchedRouteDocument {
@@ -9,19 +10,26 @@ interface MatchedRouteDocument {
 
 export abstract class Router {
   protected routes: {
-    [key: string]: (request: ServerRequestExtended) => Promise<void>;
+    [key: string]: { [key: string]: any };
   } = {};
 
   constructor(protected baseRoute?: string) {}
 
   public async handle(request: ServerRequestExtended): Promise<boolean> {
-    for (const [route, handler] of Object.entries(this.routes)) {
+    for (const [route, methodMap] of Object.entries(this.routes)) {
+      // retrieve handler for requested HTTP method
+      const handler = methodMap[request.method];
+      if (!handler) {
+        // no handler provided for specified method
+        return false;
+      }
+
+      // attempt to match the route
       const matchDoc = Router.match(this.buildRoute(route), request.url);
       if (matchDoc) {
-        console.log(`${this.buildRoute(route)} matched for ${request.url}`);
+        // route matched, load the params and query objects into the request and pass to handler
         request.params = matchDoc.params;
         request.query = matchDoc.query;
-        console.log(request.params, request.query, request.decodedBody);
         await handler(request);
         return true;
       }

@@ -39,7 +39,7 @@ export class AuthDriver {
       .then(async (c) => {
         const existing = await c.findOne({ token: doc.token });
         if (existing) {
-          console.log(existing);
+          // this probably shouldn't happen, sanity check
           return Promise.reject('token exists');
         }
 
@@ -54,26 +54,27 @@ export class AuthDriver {
   /**
    * Validates a provided auth token
    * @param token
+   * @returns the username corresponding to the auth token, or undefined
    */
-  public static validateAuthToken(token: string): Promise<boolean> {
+  public static validateAuthToken(token: string): Promise<string | undefined> {
     return this.getCollection()
       .then(async (c) => {
         const doc = (await c.findOne({ token })) as TokenDocument;
 
         if (doc?.expires) {
-          if (doc.expires > new Date()) {
+          if (doc.expires < new Date()) {
             // this token exists but has expired, delete it
             await this.deleteAuthToken(token);
           } else {
             // this token exists and hasn't expired, finalize it
             await this.finalizeAuthToken(token);
-            return true;
+            return doc.username;
           }
         } else if (doc) {
-          return true;
+          return doc.username;
         }
 
-        return false;
+        return undefined;
       })
       .catch((error) => {
         // database error

@@ -1,17 +1,25 @@
 import { ServerRequestExtended } from '../app/server-request-extended.ts';
+import { validateAuthToken } from '../modules/auth/auth.ts';
 
 /**
  * Some function that does something
  * @param request the ServerRequest to process
  */
 export async function checkAuthentication(request: ServerRequestExtended) {
-  const authBearer = request.headers.get('Authorization');
-  if (authBearer) {
+  const token = request.headers.get('Authorization')?.split(/\s/g)[1];
+  if (token) {
     // auth-bearer token is supplied, validate it
-    if (authBearer.split(/\s/g)[1] === Deno.env.get('AUTH_SECRET')) {
+    if (token === Deno.env.get('AUTH_SECRET')) {
       request.user = 'service';
+      return;
     }
 
-    await Promise.resolve();
+    // we now know this is either an invalid token or it belongs to a user
+    // search for active user auth tokens
+    const username = await validateAuthToken(token);
+    if (username) {
+      request.user = 'service';
+      return;
+    }
   }
 }

@@ -19,7 +19,6 @@ const fetchers: { [key: number]: () => Promise<any> } = {
     const client = new MongoClient();
     return client
       .connect({
-        // TODO(nrwinner) move this to env
         db: dbName,
         tls: true,
         servers: [

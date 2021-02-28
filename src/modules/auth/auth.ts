@@ -25,8 +25,10 @@ import { TokenDocument } from '../../app/token.ts';
 
 /**
  * Validates a provided auth token
+ * @param token
+ * @returns the username corresponding to the provided token, or undefined
  */
-export function validateAuthToken(token: string): Promise<boolean> {
+export function validateAuthToken(token: string): Promise<string | undefined> {
   return AuthDriver.validateAuthToken(token);
 }
 
@@ -42,7 +44,7 @@ export function unsetAuthToken(token: string): Promise<void> {
  * Generates a new token for the provided username
  * @param username
  */
-export function generateNewAuthToken(username: string): Promise<void> {
+export function generateNewAuthToken(username: string): Promise<string> {
   if (!username) {
     return Promise.reject('username cannot be empty');
   }
@@ -61,5 +63,5 @@ export function generateNewAuthToken(username: string): Promise<void> {
 
   const tokenDoc: TokenDocument = { token, username, expires };
 
-  return AuthDriver.setAuthToken(tokenDoc);
+  return AuthDriver.setAuthToken(tokenDoc).then(() => token);
 }
