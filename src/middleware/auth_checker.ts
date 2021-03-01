@@ -1,4 +1,4 @@
-import { ServerRequestExtended } from '../app/server-request-extended.ts';
+import { ServerRequestExtended } from '../app/server_request_extended.ts';
 import { validateAuthToken } from '../modules/auth/auth.ts';
 
 /**

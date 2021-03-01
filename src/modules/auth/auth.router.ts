@@ -1,4 +1,4 @@
-import { ServerRequestExtended } from '../../app/server-request-extended.ts';
+import { ServerRequestExtended } from '../../app/server_request_extended.ts';
 import { HTTP_METHOD } from '../../app/http_method.ts';
 import { Router } from '../../app/router.ts';
 import { generateNewAuthToken } from './auth.ts';

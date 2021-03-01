@@ -1,4 +1,4 @@
-import { ServerRequestExtended } from '../app/server-request-extended.ts';
+import { ServerRequestExtended } from '../app/server_request_extended.ts';
 import { checkAuthentication } from './auth_checker.ts';
 import { parseBody } from './body_parser.ts';
 

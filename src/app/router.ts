@@ -1,4 +1,4 @@
-import { ServerRequestExtended } from './server-request-extended.ts';
+import { ServerRequestExtended } from './server_request_extended.ts';
 
 interface MatchedRouteDocument {
   matched: string;
