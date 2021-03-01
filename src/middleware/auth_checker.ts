@@ -18,7 +18,7 @@ export async function checkAuthentication(request: ServerRequestExtended) {
     // search for active user auth tokens
     const username = await validateAuthToken(token);
     if (username) {
-      request.user = 'service';
+      request.user = username;
       return;
     }
   }

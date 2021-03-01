@@ -1,4 +1,3 @@
-import { HTTP_METHOD } from './http_method.ts';
 import { ServerRequestExtended } from './server-request-extended.ts';
 
 interface MatchedRouteDocument {

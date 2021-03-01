@@ -13,18 +13,7 @@ export class AuthDriver {
       throw new Error('db not available');
     } else {
       return this.db.then((db) => {
-        const collection = db.collection('auth_tokens');
-
-        // FIXME(nrwinner) remove this abhorrent hack when deno_mongo supports atlas
-        const original = collection.findOne;
-        collection.findOne = function (query, options) {
-          return original.apply(this, [
-            query,
-            Object.assign({}, options, { noCursorTimeout: false }),
-          ]);
-        };
-
-        return collection;
+        return db.collection('auth_tokens');
       });
     }
   }

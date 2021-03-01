@@ -1,4 +1,6 @@
 import { MongoClient } from 'https://deno.land/x/mongo@v0.21.0/mod.ts';
+// FIXME(nrwinner) don't reach so deep when deno_mongo supports atlas
+import { Collection } from 'https://deno.land/x/mongo@v0.21.0/src/collection/collection.ts';
 
 export enum DEP {
   MONGO,
@@ -33,6 +35,27 @@ const fetchers: { [key: number]: () => Promise<any> } = {
           db: dbName,
           mechanism: 'SCRAM-SHA-1',
         },
+      })
+      .then((db) => {
+        // FIXME(nrwinner) remove this abhorrent hack when deno_mongo supports atlas
+        const originalDb = db.collection;
+        db.collection = function <T>(collectionName: string): Collection<T> {
+          const collection = originalDb.apply(this, [
+            collectionName,
+          ]) as Collection<T>;
+
+          const original = collection.findOne;
+          collection.findOne = function (query, options) {
+            return original.apply(this, [
+              query,
+              Object.assign({}, options, { noCursorTimeout: false }),
+            ]);
+          };
+
+          return collection;
+        };
+
+        return db;
       })
       .catch((err) => {
         console.error(err);
