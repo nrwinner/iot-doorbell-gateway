@@ -3,7 +3,7 @@ import { validateAuthToken } from '../modules/auth/auth.ts';
 
 /**
  * Some function that does something
- * @param request the ServerRequest to process
+ * @param request the request to process
  */
 export async function checkAuthentication(request: ServerRequestExtended) {
   const token = request.headers.get('Authorization')?.split(/\s/g)[1];
