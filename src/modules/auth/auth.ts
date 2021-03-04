@@ -1,6 +1,6 @@
 import { AuthDriver } from './auth.driver.ts';
-import { TokenDocument } from '../../app/token.ts';
-
+import { TokenDocument } from '../../app/entities/token_document.ts';
+import randomBytes from 'https://deno.land/std@0.88.0/node/_crypto/randomBytes.ts';
 /*
   Couple different types of authentication happening here:
 
@@ -11,7 +11,7 @@ import { TokenDocument } from '../../app/token.ts';
     The user will transmit a username/password combination
 
     In both cases, an auth-token will be returned to the source. That token
-    can be used to establish a websocket connection within n-seconds. If a connection with
+    can be used to establish a websocket connection before deadline. If a connection with
     the corresponding key is not established within the deadline, the key expires.
 
     If a websocket connection is established within the deadline, the key will not expire
@@ -26,10 +26,14 @@ import { TokenDocument } from '../../app/token.ts';
 /**
  * Validates a provided auth token
  * @param token
+ * @param finalize whether or not to finalize the token if temporary
  * @returns the username corresponding to the provided token, or undefined
  */
-export function validateAuthToken(token: string): Promise<string | undefined> {
-  return AuthDriver.validateAuthToken(token);
+export function validateAuthToken(
+  token: string,
+  finalize?: boolean
+): Promise<string | undefined> {
+  return AuthDriver.validateAuthToken(token, finalize);
 }
 
 /**
@@ -49,12 +53,11 @@ export function generateNewAuthToken(username: string): Promise<string> {
     return Promise.reject('username cannot be empty');
   }
 
-  // TODO(nrwinner) generate an actual auth token here
-  const token = '123456';
+  const token = randomBytes(32).toString('hex');
 
-  if (token === Deno.env.get('AUTH_SECRET')) {
+  if (token === Deno.env.get('SERVICE_AUTH_SECRET')) {
     // this should theoretically never happen, sanity check
-    throw new Error('new token is the same as the AUTH_SECRET');
+    throw new Error('new token is the same as the SERVICE_AUTH_SECRET');
   }
 
   // expiration date is 1 minute from creation

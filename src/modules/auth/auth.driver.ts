@@ -1,30 +1,16 @@
-import { Deps, DEP } from '../../deps.ts';
-import { TokenDocument } from '../../app/token.ts';
+import { MongoDriver } from '../../app/providers/mongo.driver.ts';
+import { TokenDocument } from '../../app/entities/token_document.ts';
 
-// FIXME(nrwinner) we shouldn't be reaching so deeply into the src directory for this, but it's
-// a limitation of current deno_mongo library. Fix in future if `Database` is directly exported
-import { Database } from 'https://deno.land/x/mongo@v0.21.0/src/database.ts';
+const COLLECTION = 'auth_tokens';
 
-export class AuthDriver {
-  private static db: Promise<Database> | undefined = Deps._.get(DEP.MONGO);
-
-  private static getCollection() {
-    if (!this.db) {
-      throw new Error('db not available');
-    } else {
-      return this.db.then((db) => {
-        return db.collection('auth_tokens');
-      });
-    }
-  }
-
+export class AuthDriver extends MongoDriver {
   /**
    * Creates a new temporary auth token with a 10-second expiration window
    * @param token
    * @param username
    */
   public static setAuthToken(doc: TokenDocument): Promise<void> {
-    return this.getCollection()
+    return this.getCollection(COLLECTION)
       .then(async (c) => {
         const existing = await c.findOne({ token: doc.token });
         if (existing) {
@@ -43,10 +29,14 @@ export class AuthDriver {
   /**
    * Validates a provided auth token
    * @param token
+   * @param finalize whether or not to finalize temp tokens when found
    * @returns the username corresponding to the auth token, or undefined
    */
-  public static validateAuthToken(token: string): Promise<string | undefined> {
-    return this.getCollection()
+  public static validateAuthToken(
+    token: string,
+    finalize?: boolean
+  ): Promise<string | undefined> {
+    return this.getCollection(COLLECTION)
       .then(async (c) => {
         const doc = (await c.findOne({ token })) as TokenDocument;
 
@@ -54,8 +44,8 @@ export class AuthDriver {
           if (doc.expires < new Date()) {
             // this token exists but has expired, delete it
             await this.deleteAuthToken(token);
-          } else {
-            // this token exists and hasn't expired, finalize it
+          } else if (finalize) {
+            // this hasn't expired, but isn't finalized, and we want to finalize it
             await this.finalizeAuthToken(token);
             return doc.username;
           }
@@ -76,7 +66,7 @@ export class AuthDriver {
    * @param token
    */
   public static deleteAuthToken(token: string): Promise<void> {
-    return this.getCollection().then(async (c) => {
+    return this.getCollection<TokenDocument>(COLLECTION).then(async (c) => {
       await c.deleteOne({ token });
     });
   }
@@ -86,7 +76,7 @@ export class AuthDriver {
    * @param token
    */
   public static finalizeAuthToken(token: string): Promise<void> {
-    return this.getCollection().then(async (c) => {
+    return this.getCollection<TokenDocument>(COLLECTION).then(async (c) => {
       await c.updateOne(
         { token, expires: { $exists: true } },
         { $unset: { expires: '' } }

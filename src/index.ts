@@ -1,10 +1,5 @@
-// std
 import { serve } from 'https://deno.land/std@0.88.0/http/server.ts';
-
-// third-party
 import 'https://deno.land/x/dotenv/load.ts';
-
-// local
 import { applyHTTPMiddleware } from './middleware/mod.ts';
 import { AuthRouter } from './modules/auth/auth.router.ts';
 

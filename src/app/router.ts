@@ -46,8 +46,8 @@ export abstract class Router {
     testRoute: string,
     requestedUrl: string
   ): MatchedRouteDocument | undefined {
-    const testSegments = testRoute.split('/');
-    const urlSegments = requestedUrl.split('?')[0].split('/');
+    const testSegments = testRoute.split('/').filter(Boolean);
+    const urlSegments = requestedUrl.split('?')[0].split('/').filter(Boolean);
 
     // if segment counts differ between test and url, cannot match, short circuit
     if (testSegments.length !== urlSegments.length) {
