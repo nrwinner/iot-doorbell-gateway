@@ -17,49 +17,61 @@ const fetchers: { [key: number]: () => Promise<any> } = {
       return Promise.reject('database credentials unavailable');
     }
 
-    // FIXME(nrwinner) this is the only way to connect to atlas from the deno_mongo library atm, fix when improved
-    const client = new MongoClient();
-    return client
-      .connect({
-        db: dbName,
-        tls: true,
-        servers: [
-          {
-            host: dbHost,
-            port: 27017,
-          },
-        ],
-        credential: {
-          username: dbUser,
-          password: dbPass,
-          db: dbName,
-          mechanism: 'SCRAM-SHA-1',
-        },
-      })
-      .then((db) => {
-        // FIXME(nrwinner) remove this abhorrent hack when deno_mongo supports atlas
-        const originalDb = db.collection;
-        db.collection = function <T>(collectionName: string): Collection<T> {
-          const collection = originalDb.apply(this, [
-            collectionName,
-          ]) as Collection<T>;
+    // FIXME(nrwinner) don't use an async function inside promise body here
+    return new Promise(async (resolve, reject) => {
+      // FIXME(nrwinner) this is the only way to connect to atlas from the deno_mongo library atm, fix when improved
+      const client = new MongoClient();
+      let retryCount = 0;
+      const totalRetries = 5;
+      let connected = false;
 
-          const original = collection.findOne;
-          collection.findOne = function (query, options) {
-            return original.apply(this, [
-              query,
-              Object.assign({}, options, { noCursorTimeout: false }),
-            ]);
-          };
+      while (!connected && retryCount++ < totalRetries) {
+        await client
+          .connect({
+            db: dbName,
+            tls: true,
+            servers: [
+              {
+                host: dbHost,
+                port: 27017,
+              },
+            ],
+            credential: {
+              username: dbUser,
+              password: dbPass,
+              db: dbName,
+              mechanism: 'SCRAM-SHA-1',
+            },
+          })
+          .then((db) => {
+            connected = true;
+            // FIXME(nrwinner) remove this abhorrent hack when deno_mongo supports atlas
+            const originalDb = db.collection;
+            db.collection = function <T>(
+              collectionName: string
+            ): Collection<T> {
+              const collection = originalDb.apply(this, [
+                collectionName,
+              ]) as Collection<T>;
 
-          return collection;
-        };
+              const original = collection.findOne;
+              collection.findOne = function (query, options) {
+                return original.apply(this, [
+                  query,
+                  Object.assign({}, options, { noCursorTimeout: false }),
+                ]);
+              };
 
-        return db;
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+              return collection;
+            };
+
+            resolve(db);
+          })
+          .catch((err) => {
+            console.error(err);
+          });
+      }
+    });
   },
 };
 
