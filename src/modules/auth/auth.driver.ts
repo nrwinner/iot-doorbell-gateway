@@ -40,20 +40,14 @@ export class AuthDriver extends MongoDriver {
       .then(async (c) => {
         const doc = (await c.findOne({ token })) as TokenDocument;
 
-        if (doc?.expires) {
-          if (doc.expires < new Date()) {
-            // this token exists but has expired, delete it
-            await this.deleteAuthToken(token);
-          } else if (finalize) {
-            // this hasn't expired, but isn't finalized, and we want to finalize it
-            await this.finalizeAuthToken(token);
-            return doc.username;
-          }
-        } else if (doc) {
-          return doc.username;
+        if (doc?.waitingSince && finalize) {
+          // this hasn't expired, but isn't finalized, and we want to finalize it
+          await this.finalizeAuthToken(token);
         }
 
-        return undefined;
+        if (doc) {
+          return doc.username;
+        }
       })
       .catch((error) => {
         // database error
@@ -78,8 +72,8 @@ export class AuthDriver extends MongoDriver {
   public static finalizeAuthToken(token: string): Promise<void> {
     return this.getCollection<TokenDocument>(COLLECTION).then(async (c) => {
       await c.updateOne(
-        { token, expires: { $exists: true } },
-        { $unset: { expires: '' } }
+        { token, waitingSince: { $exists: true } },
+        { $rename: { waitingSince: 'activeSince' } }
       );
     });
   }

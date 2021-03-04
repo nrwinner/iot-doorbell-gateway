@@ -65,7 +65,7 @@ class MongoConnection {
           })
           .then((db: Database) => {
             this.connected = true;
-            console.log('connection established');
+            console.log('mongo connection established');
 
             // FIXME(nrwinner) remove this abhorrent hack when deno_mongo supports atlas
             // As of right now, the { noCursorTimeout } option must be true in findOne
@@ -94,7 +94,7 @@ class MongoConnection {
           })
           .catch((err: Error) => {
             this.connected = false;
-            console.error('error during connection attempt:', err);
+            console.error('error during mongo connection attempt:', err);
           });
       }
 

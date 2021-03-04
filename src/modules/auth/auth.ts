@@ -60,11 +60,11 @@ export function generateNewAuthToken(username: string): Promise<string> {
     throw new Error('new token is the same as the SERVICE_AUTH_SECRET');
   }
 
-  // expiration date is 1 minute from creation
-  const expires = new Date();
-  expires.setMinutes(new Date().getMinutes() + 1);
-
-  const tokenDoc: TokenDocument = { token, username, expires };
+  const tokenDoc: TokenDocument = {
+    token,
+    username,
+    waitingSince: new Date(),
+  };
 
   return AuthDriver.setAuthToken(tokenDoc).then(() => token);
 }
