@@ -3,21 +3,12 @@ import 'https://deno.land/x/dotenv/load.ts';
 import { applyHTTPMiddleware } from './middleware/mod.ts';
 import { AuthRouter } from './modules/auth/auth.router.ts';
 
+// fetch port and create server
+const port = parseInt(Deno.env.get('PORT') ?? '3000')
+const server = serve({ port });
+
 async function serveHTTP() {
-  // check that port is provided in env
-  const portStr: string = Deno.env.get('HTTP_PORT') ?? '';
-  if (!portStr) {
-    throw new Error('must specify HTTP_PORT in env');
-  }
-
-  const port = parseInt(portStr);
-  if (!port || isNaN(port)) {
-    throw new Error('HTTP_PORT must be an integer');
-  }
-
-  const server = serve({ port });
-
-  console.log(`HTTP Server listening on port ${port}...`);
+  console.log(`HTTP Server listening...`);
 
   for await (const request of server) {
     await applyHTTPMiddleware(request);
@@ -31,10 +22,5 @@ async function serveHTTP() {
   }
 }
 
-async function serveWS() {
-  console.log('WS Server Listening...');
-  await Promise.resolve();
-}
-
 // start both HTTP and WS servers
-Promise.all([serveHTTP(), serveWS()]);
+Promise.all([serveHTTP()]);
